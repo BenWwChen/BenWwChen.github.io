@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="benwwchen&#39;s blog">
+    <meta name="keyword" content="benwwchen blog Institutionalized">
+    <meta name="theme-color" content="#600090">
+    <meta name="msapplication-navbutton-color" content="#600090">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#600090">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="alternate" type="application/atom+xml" title="Institutionalized" href="/atom.xml">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.css">
+    <title>
+        
+        自制 HomeKit 兼容 LED 灯条和温湿计（OpenWrt 版）｜Institutionalized
+        
+    </title>
+
+    <link rel="canonical" href="http://blog.bencww.com/2016/11/09/DIY-a-HomeKit-Light-and-a-Sensor/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/blog-style.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<style>
+
+    header.intro-header {
+        background-image: url('/images/banner-mobile.jpg')
+    }
+</style>
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="" class="animated fadeIn">
+<!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top " id="nav-top" data-ispost = "true" data-istags="false
+" data-ishome = "false" >
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand animated pulse" href="/">
+                <span class="brand-logo">
+                    Institutionalized
+                </span>
+                &nbsp;
+            </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <!-- /.navbar-collapse -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+					
+                    
+                        
+                    
+                        
+							
+                        <li>
+                            <a href="/About/">About</a>
+                        </li>
+							
+						
+                    
+                        
+							
+                        <li>
+                            <a href="/archives/">archives</a>
+                        </li>
+							
+						
+                    
+                        
+							
+                        <li>
+                            <a href="/Tags/">Tags</a>
+                        </li>
+							
+						
+                    
+					
+					
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+//    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+<!-- Main Content -->
+
+<!--only post-->
+
+
+<img class="wechat-title-img" src="/images/homekit-cover.jpg">
+
+
+<style>
+    
+    header.intro-header {
+        background-image: url('/images/homekit-cover.jpg');
+    }
+
+    
+</style>
+
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 text-center">
+                <div class="post-heading">
+                    <h1>自制 HomeKit 兼容 LED 灯条和温湿计（OpenWrt 版）</h1>
+                    
+                    <span class="meta">
+                         作者 benwwchen
+                        <span>
+                          日期 2016-11-09
+                         </span>
+                    </span>
+                    <div class="tags text-center">
+                        
+                        <a class="tag" href="/tags/#HomeKit"
+                           title="HomeKit">HomeKit</a>
+                        
+                        <a class="tag" href="/tags/#Apple"
+                           title="Apple">Apple</a>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="post-title-haojen">
+        <span>
+            自制 HomeKit 兼容 LED 灯条和温湿计（OpenWrt 版）
+        </span>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+            <!-- Post Container -->
+            <div class="col-lg-8 col-lg-offset-1 col-sm-9 post-container">
+                <p>iOS 10 多了个叫做 Home 的系统内置 App，可以直接控制所有兼容 HomeKit 的配件，正好想自己弄一个灯条玩玩，一查果然可以把灯条 DIY 成可以用 Siri 控制，也就是说兼容 HomeKit，新的 Home app 也不至于成为继 Watch app 之后又一个不会打开的系统自带 app，于是就开始动手了。</p>
+<p>先上效果图：</p>
+<p><img src="/images/ig.jpg" width="50%" alt="HomeKit Ambient Light Strip"></p>
+<a id="more"></a>
+<p>本文和 <a href="http://www.hellowk.cc/2016/03/13/make-a-diy-siri-controlled-wi-fi-light/" target="_blank" rel="external">制作一个用 Siri 控制的 WiFi 灯 | HelloWk</a> 最大的区别就是使用了 OpenWrt（mipsel 架构）路由器来替代 Raspberry Pi （ARM Linux 服务器）。试过把 HomeKit Bridge 服务器模拟从 <a href="https://github.com/KhaosT/HAP-NodeJS" target="_blank" rel="external">HAP-NodeJS</a> 换成更轻量的 <a href="https://github.com/etwmc/Personal-HomeKit-HAP" target="_blank" rel="external">Personal-HomeKit-HAP</a>，然而并没有成功，最后再重新尝试交叉编译 HAP-NodeJS 的依赖，结果成功了。</p>
+<p>因此，如果你可以直接编译 Node.js 组件的设备，参考上面提到的那篇教程就可以了（NodeMCU 代码方面可以用我修改后的代码，加入了渐变效果）。而交叉编译 mipsel 架构 Node.js 的相关依赖以及 OpenWrt 上的安装可以参考本文。</p>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><!-- toc -->
+<ul>
+<li><a href="#准备">准备</a></li>
+<li><a href="#原理">原理</a></li>
+<li><a href="#参考资料">参考资料</a></li>
+<li><a href="#安装-HomeKit-服务器和-MQTT-服务器">安装 HomeKit 服务器和 MQTT 服务器</a><ul>
+<li><a href="#交叉编译">交叉编译</a><ul>
+<li><a href="#下载-OpenWrt-SDK">下载 OpenWrt SDK</a></li>
+<li><a href="#添加软件源">添加软件源</a></li>
+<li><a href="#编译所需软件包">编译所需软件包</a></li>
+<li><a href="#编译-Node-js-组件">编译 Node.js 组件</a></li>
+</ul>
+</li>
+<li><a href="#安装到路由器上">安装到路由器上</a><ul>
+<li><a href="#安装-mdnsd">安装 mdnsd</a></li>
+<li><a href="#安装配置-MQTT-服务器">安装配置 MQTT 服务器</a></li>
+<li><a href="#安装-Node-js">安装 Node.js</a></li>
+<li><a href="#安装配置-HomeKit-服务器">安装配置 HomeKit 服务器</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#制作-Wi-Fi-灯条">制作 Wi-Fi 灯条</a></li>
+<li><a href="#温湿计和其它">温湿计和其它</a></li>
+</ul>
+<!-- toc stop -->
+<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>要完成这个灯条，你需要的东西有：</p>
+<ul>
+<li><strong>运行 OpenWrt 的设备</strong>，我用的是 newifi mini（mipsel 架构），如果你用的路由器架构也是 mipsel，那么后面交叉编译的部分可以直接使用我编译好的二进制文件。</li>
+<li><strong>基于 ESP8266 的 NodeMCU 开发板</strong>，自带 Wi-Fi，而且兼容 Arduino IDE，灯条就直接通过这个芯片控制。</li>
+<li><strong>WS2812B RGB LED 灯条</strong>，自带控制芯片，可以实现类似 Philips Hue 系列的颜色控制。</li>
+<li>面包板、杜邦线等方便调试的工具，还有一个 Logic Level Shifter，原因后面再说。灯条的供电所需要的工具最好也一次性准备好，如果灯条比较长，供电方法可以看 <a href="https://learn.adafruit.com/adafruit-neopixel-uberguide/power" target="_blank" rel="external">Powering NeoPixels | Adafruit NeoPixel Überguide | Adafruit Learning System</a> ，读 CS 专业的我这里就不敢多说了。只能说：注意安全！</li>
+</ul>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><ul>
+<li>HAP-NodeJS 是一个 Node.js 实现的 HomeKit Accessory Server，实现类似于 Philips Hue Bridge 的功能，作为 iOS 和家居配件间的桥梁，可以让 Home App 搜到并添加灯条。</li>
+<li>mosquitto 是一个轻量 MQTT 协议的服务器，常用于低功耗设备通信，在这里具体用于 HAP-NodeJS 和 ESP8266 芯片间通信，HAP-NodeJS 发送控制信息（比如开灯/关灯……）和 ESP8266 发布状态信息（比如温湿传感器的读数）。</li>
+<li>上面两个服务器都运行在 OpenWrt 路由器上，iOS 设备和 ESP8266 都连接到路由器上，Home App 就可以用了。</li>
+</ul>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a href="http://www.hellowk.cc/2016/03/13/make-a-diy-siri-controlled-wi-fi-light/" target="_blank" rel="external">制作一个用 Siri 控制的 WiFi 灯 | HelloWk</a></li>
+<li><a href="https://learn.adafruit.com/multi-tasking-the-arduino-part-3?view=all" target="_blank" rel="external">Overview | Multi-tasking the Arduino - Part 3 | Adafruit Learning System</a></li>
+<li><a href="http://www.makeuseof.com/tag/make-diy-siri-controlled-wi-fi-light/" target="_blank" rel="external">How to Make a DIY Siri-Controlled Wi-Fi Light</a></li>
+<li><a href="https://learn.adafruit.com/adafruit-neopixel-uberguide/power" target="_blank" rel="external">Powering NeoPixels | Adafruit NeoPixel Überguide | Adafruit Learning System</a></li>
+</ul>
+<h2 id="安装-HomeKit-服务器和-MQTT-服务器"><a href="#安装-HomeKit-服务器和-MQTT-服务器" class="headerlink" title="安装 HomeKit 服务器和 MQTT 服务器"></a>安装 HomeKit 服务器和 MQTT 服务器</h2><p>你可以参考下面这部分自行编译所需软件包和相关依赖，需要有一点 Linux 的基础。</p>
+<p>也可以选择<a href="/download/homekit.zip">直接下载编译好的二进制文件</a>，然后跳转到这一步：<a href="#安装到路由器上">安装到路由器上</a>。</p>
+<h3 id="交叉编译"><a href="#交叉编译" class="headerlink" title="交叉编译"></a>交叉编译</h3><h4 id="下载-OpenWrt-SDK"><a href="#下载-OpenWrt-SDK" class="headerlink" title="下载 OpenWrt SDK"></a>下载 OpenWrt SDK</h4><p>参考 <a href="https://wiki.openwrt.org/doc/howto/obtain.firmware.sdk" target="_blank" rel="external">Using the SDK [OpenWrt Wiki]</a> 下载好 OpenWrt SDK。</p>
+<h4 id="添加软件源"><a href="#添加软件源" class="headerlink" title="添加软件源"></a>添加软件源</h4><p>添加 <a href="https://github.com/remakeelectric/owrt_pub_feeds" target="_blank" rel="external">remakeelectric/owrt_pub_feeds</a> 软件源到 OpenWrt SDK 中：</p>
+<pre><code># 添加源
+$ src-git owrt_pub_feeds git://github.com/remakeelectric/owrt_pub_feeds.git
+# 更新源
+$ ./scripts/feeds update owrt_pub_feeds
+# 安装源
+$ ./scripts/feeds install -p owrt_pub_feeds -a
+</code></pre><h4 id="编译所需软件包"><a href="#编译所需软件包" class="headerlink" title="编译所需软件包"></a>编译所需软件包</h4><p>接下来编译后面需要用到的软件包，包括 </p>
+<ul>
+<li>mosquitto</li>
+<li>mosquitto-client</li>
+<li>libmosquitto</li>
+<li>libwebsockets-openssl</li>
+<li>mdnsd （也可以从官方源直接安装）</li>
+</ul>
+<p>在 OpenWrt SDK 目录下：</p>
+<pre><code># 可能需要对上述包都做下面两步操作
+$ ./scripts/feeds uninstall mosquitto # 移除旧包
+$ ./scripts/feeds install -p owrt_pub_feeds mosquitto # 安装新包
+
+# 配置并编译
+$ make menuconfig # 选择上述包后保存退出
+$ make -j4
+</code></pre><p>编译好的 ipk 文件在 bin/ramips/packages/owrt_pub_feeds/ 目录中。</p>
+<h4 id="编译-Node-js-组件"><a href="#编译-Node-js-组件" class="headerlink" title="编译 Node.js 组件"></a>编译 Node.js 组件</h4><p>创建交叉编译环境配置脚本 env.sh，内容如下（注意修改 STAGING_DIR）：</p>
+<pre><code># Setp up paths
+export BASEDIR=$(pwd)
+export STAGING_DIR=${BASEDIR}/openwrt/staging_dir
+export PREFIX=${STAGING_DIR}/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin/mipsel-openwrt-linux-
+export PATH=`pwd`/depot_tools:${STAGING_DIR}/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/bin:&quot;$PATH&quot;
+
+# MIPS cross-compile exports
+export CC=${PREFIX}gcc
+export AR=${PREFIX}ar
+export RANLIB=${PREFIX}ranlib
+export LINK=$CXX
+export CPP=&quot;${PREFIX}gcc -E&quot;
+export STRIP=${PREFIX}strip
+export OBJCOPY=${PREFIX}objcopy
+#export LD=${PREFIX}g++
+
+# extras for convenience.
+export OBJD=${PREFIX}objdump
+export GDB=${PREFIX}gdb
+export RDE=${PREFIX}readelf
+
+export NM=${PREFIX}nm
+export AS=${PREFIX}as
+export PS1=&quot;[${PREFIX}] \w$ &quot;
+export LIBPATH=${STAGING_DIR}/toolchain-mipsel_24kec+dsp_gcc-4.8-linaro_uClibc-0.9.33.2/lib/
+export LDFLAGS=&apos;-Wl,-rpath-link &apos;${LIBPATH}
+export GYPFLAGS=&quot;-Dv8_use_mips_abi_hardfloat=false -Dv8_can_use_fpu_instructions=false&quot;
+
+export V8SOURCE=${BASEDIR}/v8
+export TARGET_PATH=${BASEDIR}/linkit/opt
+</code></pre><p>使之生效：</p>
+<pre><code>$ source env.sh
+</code></pre><p>接下来下载 HAP-NodeJS 并编译依赖：</p>
+<p>（node 版本最好用 v0.10.26，避免有兼容问题）</p>
+<pre><code>$ git clone https://github.com/KhaosT/HAP-NodeJS.git
+$ cd HAP-NodeJS
+
+# 安装依赖（其中 bignum 需要修改编译选项，所以依赖它的包也不能直接通过 npm 安装）
+$ npm install --target-arch=mipsel curve25519 debug ed25519 mdns node-persist simple-plist mqtt
+$ cd node_modules
+$ git clone git://github.com/KhaosT/node-srp srp
+$ cd srp
+$ npm install --target-arch=mipsel vows
+$ cd node_modules
+$ git clone https://github.com/justmoon/node-bignum.git bignum
+$ cd bignum
+$ sed -i &apos;s/x64/mipsel/g&apos; binding.gyp # 我也不知道为什么要改 x64 那行，试过改其它好像都不太行
+$ npm rebuild --target-arch=mipsel
+</code></pre><p>然后就可以把 HAP-NodeJS 文件夹打包备用。</p>
+<h3 id="安装到路由器上"><a href="#安装到路由器上" class="headerlink" title="安装到路由器上"></a>安装到路由器上</h3><h4 id="安装-mdnsd"><a href="#安装-mdnsd" class="headerlink" title="安装 mdnsd"></a>安装 mdnsd</h4><p>mdnsd 用于 HomeKit 服务器和 iOS 设备间的互相发现和通信。</p>
+<pre><code># opkg update
+# opkg install mdnsd
+</code></pre><h4 id="安装配置-MQTT-服务器"><a href="#安装配置-MQTT-服务器" class="headerlink" title="安装配置 MQTT 服务器"></a>安装配置 MQTT 服务器</h4><p>mosquitto 用于搭建直接发送控制信号给控制芯片的 MQTT 服务器，HomeKit 服务器收到控制信号之后就会转发到 MQTT 服务器上。</p>
+<p>ssh 到路由器上，进入前面编译好/直接下载的 ipk 所在目录：</p>
+<pre><code># opkg install *.ipk
+</code></pre><p>修改 <code>/etc/mosquitto/mosquitto.conf</code>，最后添加如下内容：</p>
+<pre><code>port 1883
+listener 9001
+protocol websockets
+</code></pre><p>添加 mosquitto user：</p>
+<pre><code>useradd -r -m -d /var/lib/mosquitto -s /usr/sbin/nologin -g nogroup mosquitto
+</code></pre><h4 id="安装-Node-js"><a href="#安装-Node-js" class="headerlink" title="安装 Node.js"></a>安装 Node.js</h4><p>这里用的是从<a href="https://cnodejs.org/topic/53a2b8bba087f45620fb3cc8" target="_blank" rel="external">这里</a>下载的 v0.10.26，我试过官方源里的版本，结果运行的时候会出现奇奇怪怪的问题。</p>
+<p>Node.js 比较大，最好也安装到 U 盘，方法如下：</p>
+<ol>
+<li>先在 U 盘创建一个 packages 文件夹；</li>
+<li>在软件源加入一行<code>dest usb /mnt/sda1/packages</code>；</li>
+<li><p>修改<code>/etc/profile</code>下列如下（添加第一行，修改原来的后两行）：</p>
+<pre><code>export USB=/mnt/sda1/packages
+export LD_LIBARY_PATH=${USB}/usr/lib:${USB}/lib
+export PATH=/usr/bin:/usr/sbin:/bin:/sbin:${USB}/usr/bin:${USB}/usr/sbin
+</code></pre></li>
+<li><code>opkg install node_v0.10.26-2_ramips_24kec.ipk -d usb</code></li>
+</ol>
+<h4 id="安装配置-HomeKit-服务器"><a href="#安装配置-HomeKit-服务器" class="headerlink" title="安装配置 HomeKit 服务器"></a>安装配置 HomeKit 服务器</h4><p>首先，把打包好的 HAP-NodeJS.tar.gz 解压到 U 盘根目录:</p>
+<pre><code># tar -zxvf HAP-NodeJS.tar.gz
+</code></pre><p>如果你是自行编译的话，要删掉 accessories 文件夹里的示例代码（以 <code>“_accessory.js”</code> 结尾），然后下载 <a href="https://gist.github.com/jamesabruce/a6607fa9d93e41042fee" target="_blank" rel="external">jamesabruce 的 Wi-Fi 灯代码</a> 到 accessories 文件夹里，下一步还要修改里面的 MQTT 相关参数。</p>
+<p>然后设置开机启动：</p>
+<p>创建<code>/etc/init.d/hap-nodejs</code>文件，内容如下（如有必要修改相应目录）：</p>
+<pre><code>#!/bin/sh /etc/rc.common
+
+START=91
+boot() {
+        sleep 60
+        start
+}
+
+start() {
+        cd /mnt/sda1/HAP-NodeJS
+        /mnt/sda1/packages/usr/bin/node BridgedCore.js &gt; /dev/null 2&gt;&amp;1 &amp;
+}
+
+stop() {
+        killall node
+}
+
+restart() {
+        stop
+        start
+}
+</code></pre><h2 id="制作-Wi-Fi-灯条"><a href="#制作-Wi-Fi-灯条" class="headerlink" title="制作 Wi-Fi 灯条"></a>制作 Wi-Fi 灯条</h2><p>这部分跟 <a href="http://www.hellowk.cc/2016/03/13/make-a-diy-siri-controlled-wi-fi-light/" target="_blank" rel="external">制作一个用 Siri 控制的 WiFi 灯 | HelloWk</a>、<a href="http://www.makeuseof.com/tag/make-diy-siri-controlled-wi-fi-light/" target="_blank" rel="external">How to Make a DIY Siri-Controlled Wi-Fi Light</a> 基本没有太大区别。注意修改 NodeMCU 代码和 HAP-NodeJS 中的配置就好（比如 Wi-Fi 名称、密码和 MQTT 服务器IP、Topic）。</p>
+<p>另外，我的供电方式似乎让 NodeMCU GPIO 端口的 3.3V 不足以稳定控制 5V 的 WS2812B 灯条，于是加入了一个 Logic Level Shifter，供参考。</p>
+<p>而 NodeMCU 的代码可以用下面我修改过的，加入了颜色/亮暗切换时的渐变，效果更像 Philips Hue 了：</p>
+<script>function ishidden(odiv){var vdiv = document.getElementById(odiv);vdiv.style.display = (vdiv.style.display == 'none')?'block':'none';}</script>
+<a herf="" onclick="ishidden('gist41707869')">展开/收起代码</a>
+<script src="https://gist.github.com/benwwchen/08a87e911aa71357e9961e63a37a77f4.js"></script>
+<script>ishidden('gist41707869')</script>
+
+<p><br><br>代码写入到 NodeMCU 芯片后，先参照上述教程先用 MQTT 客户端发送指令到相应 Topic 测试完毕，接下来就可以在路由器上启动 HomeKit 服务器：</p>
+<pre><code># /etc/init.d/hap-nodejs start
+</code></pre><p>打开手机上的 Home App，就可以开始灯条配对了，配对码是：</p>
+<pre><code>031-45-154
+</code></pre><p>你也可以在 BridgeCore.js 中修改，但是不能用过于简单的 PIN。（如果要修改配对过的设置的话，需要删除 HAP-NodeJS 下的 persist 文件夹再重新配对）</p>
+<p>配对好之后 Home App 的界面如下：</p>
+<p><img src="/images/homeapp.jpg" width="50%" alt="Home App Screenshot"></p>
+<p>有点好看。</p>
+<p>嗯，搞定了。</p>
+<h2 id="温湿计和其它"><a href="#温湿计和其它" class="headerlink" title="温湿计和其它"></a>温湿计和其它</h2><p>当然，HomeKit 兼容配件不只是灯，还有各种各样的设备，包括<a href="http://www.apple.com/hk/ios/home/" target="_blank" rel="external">苹果官网上这个页面</a>提到的这些（其中有很多都有相关的 DIY 项目）：</p>
+<p><img src="/images/accessories.png" alt="Home Accessories"></p>
+<p>我在灯条基础上还加入 DHT11 温湿度传感器，有兴趣的话可以参考我的<a href="https://gist.github.com/benwwchen/82b7967b20b8261cf6b0aa35f46c152b" target="_blank" rel="external">包含灯和温湿计的 NodeMCU 代码</a>和 <a href="https://gist.github.com/benwwchen/51ffa89c965310dfb0e2a7b3785851b2" target="_blank" rel="external">HAP-NodeJS 的传感器 Accessory 代码</a>。</p>
+<p>感觉这个项目十分有趣，可以让你体验到 Apple 想象中的智能家居，并了解到背后的实现和思路。这让我联想到黑客军团 S02E01 中 Android 控制的智能家居被黑的场景。再看看 Apple TV 和 Google Home，这是个很有意思的议题。</p>
+
+                <hr>
+                
+
+                <ul class="pager">
+                    
+                    
+                    <li class="next">
+                        <a href="/2016/03/10/Deploy-Hexo-to-VPS-and-encrypt-with-Let-s-Encrypt-on-Nginx/" data-toggle="tooltip" data-placement="top"
+                           title="Hexo 部署到 VPS，用 Let's Encrypt 的 SSL 证书加密(HTTPS)">Next Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+            <div class="hidden-xs col-sm-3 toc-col">
+                <div class="toc-wrap">
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#目录"><span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#准备"><span class="toc-text">准备</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#原理"><span class="toc-text">原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#参考资料"><span class="toc-text">参考资料</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装-HomeKit-服务器和-MQTT-服务器"><span class="toc-text">安装 HomeKit 服务器和 MQTT 服务器</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#交叉编译"><span class="toc-text">交叉编译</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#下载-OpenWrt-SDK"><span class="toc-text">下载 OpenWrt SDK</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#添加软件源"><span class="toc-text">添加软件源</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#编译所需软件包"><span class="toc-text">编译所需软件包</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#编译-Node-js-组件"><span class="toc-text">编译 Node.js 组件</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装到路由器上"><span class="toc-text">安装到路由器上</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#安装-mdnsd"><span class="toc-text">安装 mdnsd</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#安装配置-MQTT-服务器"><span class="toc-text">安装配置 MQTT 服务器</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#安装-Node-js"><span class="toc-text">安装 Node.js</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#安装配置-HomeKit-服务器"><span class="toc-text">安装配置 HomeKit 服务器</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#制作-Wi-Fi-灯条"><span class="toc-text">制作 Wi-Fi 灯条</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#温湿计和其它"><span class="toc-text">温湿计和其它</span></a></li></ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar Container -->
+
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5 class="text-center">
+                        <a href="/tags/">FEATURED TAGS</a>
+                    </h5>
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#HomeKit"
+                           title="HomeKit">HomeKit</a>
+                        
+                        <a class="tag" href="/tags/#Apple"
+                           title="Apple">Apple</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+            </div>
+        </div>
+
+    </div>
+</article>
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "benwwchen";
+    var disqus_identifier = "http://blog.bencww.com/2016/11/09/DIY-a-HomeKit-Light-and-a-Sensor/";
+    var disqus_url = "http://blog.bencww.com/2016/11/09/DIY-a-HomeKit-Light-and-a-Sensor/";
+
+    (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+<!-- Footer -->
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 text-center">
+                <br>
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+                    <li>
+                        <a target="_blank" href="http://weibo.com/benwwchen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/benwwchen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Institutionalized 2016
+                    <br>
+                    Hosted on <a href="https://m.do.co/c/7c91796a84a6">DigitalOcean</a> & <a href="https://pages.github.com/">GitHub</a>
+                    <br>
+                    <span id="busuanzi_container_site_pv" style="font-size: 12px;">PV: <span id="busuanzi_value_site_pv"></span> Times</span>
+                    <br>
+                    Theme by <a href="https://haojen.github.io/">Haojen Ma</a>
+                </p>
+
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/blog.js"></script>
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://blog.bencww.com/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-64285918-1';
+    var _gaDomain = 'blog.bencww.com';
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+<!-- Baidu Tongji -->
+
+
+<!-- swiftype -->
+<script type="text/javascript">
+  (function(w,d,t,u,n,s,e){w['SwiftypeObject']=n;w[n]=w[n]||function(){
+  (w[n].q=w[n].q||[]).push(arguments);};s=d.createElement(t);
+  e=d.getElementsByTagName(t)[0];s.async=1;s.src=u;e.parentNode.insertBefore(s,e);
+  })(window,document,'script','//s.swiftypecdn.com/install/v2/st.js','_st');
+
+  _st('install','undefined','2.0.0');
+</script>
+
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<!--wechat title img-->
+<img class="wechat-title-img" src="https://avatars1.githubusercontent.com/u/4254675?v=3&amp;s=460">
+</body>
+
+</html>

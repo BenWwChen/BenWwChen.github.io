@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag -->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="benwwchen&#39;s blog">
+    <meta name="keyword" content="benwwchen blog Institutionalized">
+    <meta name="theme-color" content="#600090">
+    <meta name="msapplication-navbutton-color" content="#600090">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#600090">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="alternate" type="application/atom+xml" title="Institutionalized" href="/atom.xml">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css">
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.css">
+    <title>
+        
+        Hexo 部署到 VPS，用 Let&#39;s Encrypt 的 SSL 证书加密(HTTPS)｜Institutionalized
+        
+    </title>
+
+    <link rel="canonical" href="http://blog.bencww.com/2016/03/10/Deploy-Hexo-to-VPS-and-encrypt-with-Let-s-Encrypt-on-Nginx/">
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/blog-style.css">
+
+    <!-- Pygments Github CSS -->
+    <link rel="stylesheet" href="/css/syntax.css">
+</head>
+
+<style>
+
+    header.intro-header {
+        background-image: url('/images/banner-mobile.jpg')
+    }
+</style>
+<!-- hack iOS CSS :active style -->
+<body ontouchstart="" class="animated fadeIn">
+<!-- Navigation -->
+<nav class="navbar navbar-default navbar-custom navbar-fixed-top " id="nav-top" data-ispost = "true" data-istags="false
+" data-ishome = "false" >
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header page-scroll">
+            <button type="button" class="navbar-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand animated pulse" href="/">
+                <span class="brand-logo">
+                    Institutionalized
+                </span>
+                &nbsp;
+            </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <!-- Known Issue, found by Hux:
+            <nav>'s height woule be hold on by its content.
+            so, when navbar scale out, the <nav> will cover tags.
+            also mask any touch event of tags, unfortunately.
+        -->
+        <!-- /.navbar-collapse -->
+        <div id="huxblog_navbar">
+            <div class="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href="/">Home</a>
+                    </li>
+					
+                    
+                        
+                    
+                        
+							
+                        <li>
+                            <a href="/About/">About</a>
+                        </li>
+							
+						
+                    
+                        
+							
+                        <li>
+                            <a href="/archives/">archives</a>
+                        </li>
+							
+						
+                    
+                        
+							
+                        <li>
+                            <a href="/Tags/">Tags</a>
+                        </li>
+							
+						
+                    
+					
+					
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!-- /.container -->
+</nav>
+<script>
+    // Drop Bootstarp low-performance Navbar
+    // Use customize navbar with high-quality material design animation
+    // in high-perf jank-free CSS3 implementation
+//    var $body   = document.body;
+    var $toggle = document.querySelector('.navbar-toggle');
+    var $navbar = document.querySelector('#huxblog_navbar');
+    var $collapse = document.querySelector('.navbar-collapse');
+
+    $toggle.addEventListener('click', handleMagic)
+    function handleMagic(e){
+        if ($navbar.className.indexOf('in') > 0) {
+        // CLOSE
+            $navbar.className = " ";
+            // wait until animation end.
+            setTimeout(function(){
+                // prevent frequently toggle
+                if($navbar.className.indexOf('in') < 0) {
+                    $collapse.style.height = "0px"
+                }
+            },400)
+        }else{
+        // OPEN
+            $collapse.style.height = "auto"
+            $navbar.className += " in";
+        }
+    }
+</script>
+
+<!-- Main Content -->
+
+<!--only post-->
+
+
+<img class="wechat-title-img"
+     src="/images/banner-mobile.jpg">
+
+
+<style>
+    
+    header.intro-header {
+        background-image: url('/images/banner-mobile.jpg')
+    }
+
+    
+</style>
+
+<header class="intro-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 text-center">
+                <div class="post-heading">
+                    <h1>Hexo 部署到 VPS，用 Let&#39;s Encrypt 的 SSL 证书加密(HTTPS)</h1>
+                    
+                    <span class="meta">
+                         作者 benwwchen
+                        <span>
+                          日期 2016-03-10
+                         </span>
+                    </span>
+                    <div class="tags text-center">
+                        
+                        <a class="tag" href="/tags/#Hexo"
+                           title="Hexo">Hexo</a>
+                        
+                        <a class="tag" href="/tags/#VPS"
+                           title="VPS">VPS</a>
+                        
+                        <a class="tag" href="/tags/#SSL"
+                           title="SSL">SSL</a>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="post-title-haojen">
+        <span>
+            Hexo 部署到 VPS，用 Let's Encrypt 的 SSL 证书加密(HTTPS)
+        </span>
+    </div>
+</header>
+
+<!-- Post Content -->
+<article>
+    <div class="container">
+        <div class="row">
+            <!-- Post Container -->
+            <div class="col-lg-8 col-lg-offset-1 col-sm-9 post-container">
+                <p>因为 tk 域名终于因为没有网站被取消了，于是将博客部署到了 VPS 上，顺便配置好 Nginx + Let’s Encrypt 的 SSL 证书支持了 HTTPS 加密访问，现在可以通过 <a href="https://blog.bencww.com">blog.bencww.com</a>、<del><a href="https://benwwdo.tk" target="_blank" rel="external">benwwdo.tk</a></del>、<a href="http://benchen.tk" target="_blank" rel="external">benchen.tk</a> 访问这里了，<a href="http://benchen.tk" target="_blank" rel="external">benchen.tk</a> 因为还是托管在 GitHub 上所以没有加密。</p>
+<p>这里简单记录一下过程，基本上只是参考到的博客文章的集合。希望以后能把这个博客好好用起来。</p>
+<a id="more"></a>
+<h2 id="Hexo-部署到-VPS"><a href="#Hexo-部署到-VPS" class="headerlink" title="Hexo 部署到 VPS"></a>Hexo 部署到 VPS</h2><p>Hexo 部署到 VPS 主要参考了 <a href="http://huifeng.me/2015/08/16/deploy-hexo-to-vps/" target="_blank" rel="external">Deploy Hexo sites to VPS // 回风.Me</a>，感谢。这里顺带也搭了个 Git 服务器，而由于 VPS 的 SSH 为标准端口，参考了 <a href="http://nanxiao.me/git-clone-ssh-non-22-port/" target="_blank" rel="external">处理git clone命令的非标准SSH端口连接</a> 来解决，对应修改 Hexo 配置文件中的 repo。</p>
+<h2 id="Nginx-上安装-Let’s-Encrypt-的-SSL-证书"><a href="#Nginx-上安装-Let’s-Encrypt-的-SSL-证书" class="headerlink" title="Nginx 上安装 Let’s Encrypt 的 SSL 证书"></a>Nginx 上安装 Let’s Encrypt 的 SSL 证书</h2><p>早前搭 <a href="http://benwwla.tk" target="_blank" rel="external">Google镜像站</a>时用过 <a href="https://letsencrypt.org/" target="_blank" rel="external">Let’s Encrypt</a> 的免费SSL证书，主要参考 <a href="https://mitnk.com/2015/11/lets_encrypt/" target="_blank" rel="external">Nginx安装Let’s Encrypt免费SSL证书</a>，这次很方便就同样使网站支持 HTTPS 访问了。<br>最终的 nginx 站点配置文件大概是这样的：</p>
+<pre><code>server {
+        listen 80;
+        listen [::]:80 ipv6only=on;
+        server_name example.com example.tk; #多域名
+        location /.well-known/acme-challenge/ {
+                default_type text/plain;
+                alias /home/username/acme-challenge/;
+        }
+        return 301 https://$host$request_uri; #根据域名返回不同的HTTPS URL
+}
+
+server {
+        listen 443 ssl;
+        listen [::]:443 ssl ipv6only=on;
+        server_name example.com;
+
+        ssl on;
+        ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+
+        ssl_prefer_server_ciphers on;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers EECDH+aRSA+AES;       
+
+        root /var/www/blog;
+        index index.html index.htm;
+
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+
+server {
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        server_name example.tk;
+
+        ssl on;
+        ssl_certificate /etc/letsencrypt/live/example.tk/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/example.tk/privkey.pem;
+
+        ssl_prefer_server_ciphers on;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers EECDH+aRSA+AES;
+
+        root /var/www/blog;
+        index index.html index.htm;
+
+        location / {
+                try_files $uri $uri/ /index.html;
+        }
+}
+</code></pre><p>同时也支持了 IPv6 访问。</p>
+
+                <hr>
+                
+
+                <ul class="pager">
+                    
+                    <li class="previous">
+                        <a href="/2016/11/09/DIY-a-HomeKit-Light-and-a-Sensor/" data-toggle="tooltip" data-placement="top"
+                           title="自制 HomeKit 兼容 LED 灯条和温湿计（OpenWrt 版）">&larr; Previous Post</a>
+                    </li>
+                    
+                    
+                    <li class="next">
+                        <a href="/2015/06/18/hi/" data-toggle="tooltip" data-placement="top"
+                           title="Hi">Next Post &rarr;</a>
+                    </li>
+                    
+                </ul>
+
+                
+
+                
+                <!-- disqus 评论框 start -->
+                <div class="comment">
+                    <div id="disqus_thread" class="disqus-thread"></div>
+                </div>
+                <!-- disqus 评论框 end -->
+                
+
+            </div>
+
+            <div class="hidden-xs col-sm-3 toc-col">
+                <div class="toc-wrap">
+                    <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Hexo-部署到-VPS"><span class="toc-text">Hexo 部署到 VPS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Nginx-上安装-Let’s-Encrypt-的-SSL-证书"><span class="toc-text">Nginx 上安装 Let’s Encrypt 的 SSL 证书</span></a></li></ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sidebar Container -->
+
+            <div class="
+                col-lg-8 col-lg-offset-2
+                col-md-10 col-md-offset-1
+                sidebar-container">
+
+                <!-- Featured Tags -->
+                
+                <section>
+                    <!-- no hr -->
+                    <h5 class="text-center">
+                        <a href="/tags/">FEATURED TAGS</a>
+                    </h5>
+                    <div class="tags">
+                        
+                        <a class="tag" href="/tags/#Hexo"
+                           title="Hexo">Hexo</a>
+                        
+                        <a class="tag" href="/tags/#VPS"
+                           title="VPS">VPS</a>
+                        
+                        <a class="tag" href="/tags/#SSL"
+                           title="SSL">SSL</a>
+                        
+                    </div>
+                </section>
+                
+
+                <!-- Friends Blog -->
+                
+            </div>
+        </div>
+
+    </div>
+</article>
+
+
+
+<!-- disqus 公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES * * */
+    var disqus_shortname = "benwwchen";
+    var disqus_identifier = "http://blog.bencww.com/2016/03/10/Deploy-Hexo-to-VPS-and-encrypt-with-Let-s-Encrypt-on-Nginx/";
+    var disqus_url = "http://blog.bencww.com/2016/03/10/Deploy-Hexo-to-VPS-and-encrypt-with-Let-s-Encrypt-on-Nginx/";
+
+    (function () {
+        var dsq = document.createElement('script');
+        dsq.type = 'text/javascript';
+        dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<!-- disqus 公共JS代码 end -->
+
+
+
+
+<!-- Footer -->
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1 text-center">
+                <br>
+                <ul class="list-inline text-center">
+                
+                
+                
+
+                
+                    <li>
+                        <a target="_blank" href="http://weibo.com/benwwchen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-weibo fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                
+                    <li>
+                        <a target="_blank"  href="https://github.com/benwwchen">
+                            <span class="fa-stack fa-lg">
+                                <i class="fa fa-circle fa-stack-2x"></i>
+                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </a>
+                    </li>
+                
+
+                
+
+                </ul>
+                <p class="copyright text-muted">
+                    Copyright &copy; Institutionalized 2016
+                    <br>
+                    Hosted on <a href="https://m.do.co/c/7c91796a84a6">DigitalOcean</a> & <a href="https://pages.github.com/">GitHub</a>
+                    <br>
+                    <span id="busuanzi_container_site_pv" style="font-size: 12px;">PV: <span id="busuanzi_value_site_pv"></span> Times</span>
+                    <br>
+                    Theme by <a href="https://haojen.github.io/">Haojen Ma</a>
+                </p>
+
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- jQuery -->
+<script src="/js/jquery.min.js"></script>
+
+<!-- Bootstrap Core JavaScript -->
+<script src="/js/bootstrap.min.js"></script>
+
+<!-- Custom Theme JavaScript -->
+<script src="/js/blog.js"></script>
+
+<!-- async load function -->
+<script>
+    function async(u, c) {
+      var d = document, t = 'script',
+          o = d.createElement(t),
+          s = d.getElementsByTagName(t)[0];
+      o.src = u;
+      if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
+      s.parentNode.insertBefore(o, s);
+    }
+</script>
+
+<!-- jquery.tagcloud.js -->
+<script>
+    // only load tagcloud.js in tag.html
+    if($('#tag_cloud').length !== 0){
+        async("http://blog.bencww.com/js/jquery.tagcloud.js",function(){
+            $.fn.tagcloud.defaults = {
+                //size: {start: 1, end: 1, unit: 'em'},
+                color: {start: '#bbbbee', end: '#0085a1'},
+            };
+            $('#tag_cloud a').tagcloud();
+        })
+    }
+</script>
+
+<!--fastClick.js -->
+<script>
+    async("//cdn.bootcss.com/fastclick/1.0.6/fastclick.min.js", function(){
+        var $nav = document.querySelector("nav");
+        if($nav) FastClick.attach($nav);
+    })
+</script>
+
+<!-- Google Analytics -->
+
+
+<script>
+    // dynamic User by Hux
+    var _gaId = 'UA-64285918-1';
+    var _gaDomain = 'blog.bencww.com';
+    // Originial
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    ga('create', _gaId, _gaDomain);
+    ga('send', 'pageview');
+</script>
+
+
+<!-- Baidu Tongji -->
+
+
+<!-- swiftype -->
+<script type="text/javascript">
+  (function(w,d,t,u,n,s,e){w['SwiftypeObject']=n;w[n]=w[n]||function(){
+  (w[n].q=w[n].q||[]).push(arguments);};s=d.createElement(t);
+  e=d.getElementsByTagName(t)[0];s.async=1;s.src=u;e.parentNode.insertBefore(s,e);
+  })(window,document,'script','//s.swiftypecdn.com/install/v2/st.js','_st');
+
+  _st('install','undefined','2.0.0');
+</script>
+
+<script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+<!--wechat title img-->
+<img class="wechat-title-img" src="https://avatars1.githubusercontent.com/u/4254675?v=3&amp;s=460">
+</body>
+
+</html>

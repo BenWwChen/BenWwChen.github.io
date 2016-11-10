@@ -1,0 +1,1 @@
+原来换主题会把以前的 commit 历史都清空……:expressionless:
